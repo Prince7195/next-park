@@ -1,65 +1,102 @@
+import { useEffect, useState } from "react";
+import axios from 'axios'
 import Head from 'next/head'
-import styles from '../styles/Home.module.css'
+import Link from 'next/link'
 
-export default function Home() {
+export default function Home({ parks }) {
+  const [parkIndex, setParkIndex] = useState(1);
+  const [selected, setSelected] = useState({
+    image: parks.data[parkIndex].images[0].url,
+    code: parks.data[parkIndex].parkCode,
+  });
+  const [isLoading, setIsLoading] = useState(true);
+
+  const handleChangePark = (e) => {
+    setParkIndex(e.target.value);
+  };
+
+  useEffect(() => {
+    setSelected({
+      image: parks.data[parkIndex].images[0].url,
+      code: parks.data[parkIndex].parkCode,
+    });
+  }, [parkIndex]);
+
+  useEffect(() => {
+    if (parks.data) {
+      setIsLoading(false);
+    }
+  }, [parks]);
+
+  if (isLoading) return <p>Loading...</p>;
+
   return (
-    <div className={styles.container}>
+    <div>
       <Head>
-        <title>Create Next App</title>
+        <title>Next Park</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
-        </h1>
-
-        <p className={styles.description}>
-          Get started by editing{' '}
-          <code className={styles.code}>pages/index.js</code>
-        </p>
-
-        <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h3>Documentation &rarr;</h3>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
-
-          <a href="https://nextjs.org/learn" className={styles.card}>
-            <h3>Learn &rarr;</h3>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/master/examples"
-            className={styles.card}
-          >
-            <h3>Examples &rarr;</h3>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-
-          <a
-            href="https://vercel.com/import?filter=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-          >
-            <h3>Deploy &rarr;</h3>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
-        </div>
+      <main>
+        <nav className="border-b-2 border-green-200 fixed text-center w-full py-4 bg-white">
+          <Link href="/">
+            <a className="text-green-700 hover:text-green-900 transition-colors duration-300">
+              Next Park
+            </a>
+          </Link>
+        </nav>
+        <header className="flex flex-col items-center justify-center h-screen">
+          <h1 className="mb-12 text-center text-3xl md:text-5xl">
+            Find Your Next Adventure
+          </h1>
+          <div className="w-full flex flex-col items-center lg:flex-row">
+            <div className="flex flex-col items-center w-1/2">
+              <div className="border-2 border-gray p-8 shadow">
+                <div className="h-64 w-64 overflow-y-hidden">
+                  {selected.image && <img
+                    className="rounded"
+                    src={selected.image}
+                    alt={selected.title}
+                  />}
+                </div>
+                <label>Choose a park</label>
+                <select
+                  onChange={handleChangePark}
+                  className="block w-64 mx-auto bg-white border-2 border-gray-700 text-gray-700 py-3 px-4 focus:border-gray-500"
+                >
+                  {parks.data.map((park, idx) => {
+                    if (park.designation === "National Park") {
+                      return (
+                        <option key={park.id} value={idx}>
+                          {park.fullName}
+                        </option>
+                      );
+                    }
+                  })}
+                </select>
+                <Link href={`/parks/${selected.code}`}>
+                  <a className="w-24 block mx-auto mt-4 border-2 py-2 border-green-700 bg-green-700 hover:bg-white text-white hover:text-green-700 transition-colors duration-100 text-center">
+                    Let's Go!
+                  </a>
+                </Link>
+              </div>
+            </div>
+            <div className="w-full lg:w-1/2 flex items-center justify-center py-8 lg:p-0">
+              <img className="w-full" src="/navigator.svg" />
+            </div>
+          </div>
+        </header>
       </main>
-
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <img src="/vercel.svg" alt="Vercel Logo" className={styles.logo} />
-        </a>
-      </footer>
     </div>
   )
+}
+
+export const getStaticProps = async () => {
+  const res = await axios.get(`https://developer.nps.gov/api/v1/parks?&api_key=${process.env.PARKS_API_KEY}`);
+  const parks = res.data;
+  return {
+    props: {
+      parks
+    }
+  };
 }
